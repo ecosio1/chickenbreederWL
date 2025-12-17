@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VisualIdType {
+  zip_tie
+  leg_band
+  metal_band
+  other
+}
+
+enum ChickenSex {
+  rooster
+  hen
+  unknown
+}
+
+enum ChickenStatus {
+  alive
+  sold
+  deceased
+}
+
+enum OrgRole {
+  owner
+  member
+  viewer
+}
+
+enum MembershipStatus {
+  invited
+  active
+}
+
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships   OrganizationMembership[]
+  coopLocations CoopLocation[]
+  chickens      Chicken[]
+  breedingEvents BreedingEvent[]
+
+  @@map("organization")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships OrganizationMembership[]
+
+  @@map("app_user")
+}
+
+model OrganizationMembership {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  role           OrgRole          @default(member)
+  status         MembershipStatus @default(active)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("organization_membership")
+}
+
+model CoopLocation {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chickens     Chicken[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("coop_location")
+}
+
+model Chicken {
+  id               String        @id @default(uuid()) @db.Uuid
+  organizationId   String        @map("organization_id") @db.Uuid
+  uniqueCode       String        @map("unique_code") @db.VarChar(12) @default(dbgenerated("generate_unique_code()"))
+  visualIdType     VisualIdType  @map("visual_id_type")
+  visualIdColor    String        @map("visual_id_color")
+  visualIdNumber   String        @map("visual_id_number")
+  breedPrimary     String        @map("breed_primary")
+  breedSecondary   String?       @map("breed_secondary")
+  sex              ChickenSex
+  hatchDate        DateTime?     @map("hatch_date") @db.Date
+  sireId           String?       @map("sire_id") @db.Uuid
+  damId            String?       @map("dam_id") @db.Uuid
+  colorTraits      Json?         @map("color_traits")
+  status           ChickenStatus
+  statusDate       DateTime?     @map("status_date") @db.Date
+  coopLocationId   String?       @map("coop_location_id") @db.Uuid
+  coopLocationName String?       @map("coop_location_name")
+  notes            String?       @db.Text
+  deletedAt        DateTime?     @map("deleted_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coopLocation CoopLocation? @relation(fields: [organizationId, coopLocationId], references: [organizationId, id], onDelete: SetNull)
+
+  sire         Chicken?  @relation("ChickenSire", fields: [organizationId, sireId], references: [organizationId, id], onDelete: SetNull)
+  sireChildren Chicken[] @relation("ChickenSire")
+  dam          Chicken?  @relation("ChickenDam", fields: [organizationId, damId], references: [organizationId, id], onDelete: SetNull)
+  damChildren  Chicken[] @relation("ChickenDam")
+
+  sireBreedingEvents BreedingEvent[] @relation("BreedingEventSire")
+  damBreedingEvents  BreedingEvent[] @relation("BreedingEventDam")
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, uniqueCode])
+  @@index([organizationId])
+  @@index([status])
+  @@index([uniqueCode])
+  @@index([organizationId, status])
+  @@index([organizationId, deletedAt])
+  @@map("chicken")
+}
+
+model BreedingEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  sireId         String   @map("sire_id") @db.Uuid
+  damId          String   @map("dam_id") @db.Uuid
+  startDate      DateTime @map("start_date") @db.Date
+  endDate        DateTime? @map("end_date") @db.Date
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sire         Chicken      @relation("BreedingEventSire", fields: [organizationId, sireId], references: [organizationId, id], onDelete: Restrict)
+  dam          Chicken      @relation("BreedingEventDam", fields: [organizationId, damId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([organizationId, startDate])
+  @@map("breeding_event")
+}
+
+
