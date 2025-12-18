@@ -23,8 +23,8 @@ interface PrismaForLineage {
   chicken: {
     findMany(args: {
       where: { organizationId: string; deletedAt: null; id: { in: string[] } };
-      select: { id: true; sireId: true; damId: true };
-    }): Promise<Array<ChickenAncestryRow>>;
+      select: Record<string, boolean>;
+    }): Promise<Array<Record<string, unknown>>>;
   };
 }
 
@@ -38,6 +38,16 @@ function intersect(a: Set<string>, b: Set<string>): Set<string> {
   return out;
 }
 
+function coerceAncestryRow(row: Record<string, unknown>): ChickenAncestryRow | null {
+  const id = typeof row["id"] === "string" ? (row["id"] as string) : null;
+  if (!id) return null;
+  return {
+    id,
+    sireId: typeof row["sireId"] === "string" ? (row["sireId"] as string) : null,
+    damId: typeof row["damId"] === "string" ? (row["damId"] as string) : null,
+  };
+}
+
 export async function getPairInbreedingWarnings(
   prisma: PrismaForLineage,
   organizationId: string,
@@ -48,10 +58,14 @@ export async function getPairInbreedingWarnings(
 
   // Query 1: get parents for both chickens
   queryCount += 1;
-  const pairRows = await prisma.chicken.findMany({
+  const pairRowsRaw = await prisma.chicken.findMany({
     where: { organizationId, deletedAt: null, id: { in: [sireId, damId] } },
     select: { id: true, sireId: true, damId: true },
   });
+
+  const pairRows = pairRowsRaw
+    .map(coerceAncestryRow)
+    .filter((x): x is ChickenAncestryRow => Boolean(x));
 
   const pairMap = new Map(pairRows.map((r) => [r.id, r]));
   const sire = pairMap.get(sireId) ?? null;
@@ -82,7 +96,10 @@ export async function getPairInbreedingWarnings(
   if (isParentChild)
     warnings.push({
       code: "parent_child",
-      message: "High risk: One bird is the parent of the other.",
+      message:
+        sireId === dam.sireId || sireId === dam.damId
+          ? "High risk: the selected sire is a parent of the selected dam (parent-child pairing)."
+          : "High risk: the selected dam is a parent of the selected sire (parent-child pairing).",
     });
 
   // Siblings: full vs half
@@ -94,12 +111,12 @@ export async function getPairInbreedingWarnings(
   if (isFullSiblings)
     warnings.push({
       code: "full_siblings",
-      message: "Risk: These birds share both parents (full siblings).",
+      message: "Risk: these birds are full siblings (share both parents).",
     });
   else if (isHalfSiblings)
     warnings.push({
       code: "half_siblings",
-      message: "Risk: These birds share a parent (half siblings).",
+      message: "Risk: these birds are half siblings (share one parent).",
     });
 
   // Query 2: grandparents (fetch parents of parents)
@@ -107,10 +124,14 @@ export async function getPairInbreedingWarnings(
   let sharedGrandparentIds: string[] = [];
   if (parentIdsToFetch.length > 0) {
     queryCount += 1;
-    const parentRows = await prisma.chicken.findMany({
+    const parentRowsRaw = await prisma.chicken.findMany({
       where: { organizationId, deletedAt: null, id: { in: parentIdsToFetch } },
       select: { id: true, sireId: true, damId: true },
     });
+
+    const parentRows = parentRowsRaw
+      .map(coerceAncestryRow)
+      .filter((x): x is ChickenAncestryRow => Boolean(x));
 
     const parentMap = new Map(parentRows.map((r) => [r.id, r]));
 
@@ -132,7 +153,7 @@ export async function getPairInbreedingWarnings(
     if (sharedGrandparentIds.length > 0)
       warnings.push({
         code: "shared_grandparent",
-        message: "Risk: These birds share a grandparent.",
+        message: "Risk: these birds share a grandparent (based on known lineage).",
       });
   }
 

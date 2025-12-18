@@ -5,6 +5,7 @@ import { StatusBadge } from "../../ui/status-badge";
 import { ChickenListMobile } from "./chicken-list-mobile";
 import { ChickenRowActions } from "./chicken-row-actions";
 import { VisualId } from "./visual-id";
+import { EmptyState } from "../../ui/empty-state";
 
 function toQueryString(searchParams: Record<string, string | string[] | undefined>): string {
   const usp = new URLSearchParams();
@@ -14,6 +15,20 @@ function toQueryString(searchParams: Record<string, string | string[] | undefine
     else usp.set(key, value);
   }
   return usp.toString();
+}
+
+function hasMeaningfulFilters(searchParams: Record<string, string | string[] | undefined>): boolean {
+  const ignored = new Set(["page", "page_size"]);
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (ignored.has(key)) continue;
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      if (value.some((v) => String(v).trim().length > 0)) return true;
+      continue;
+    }
+    if (String(value).trim().length > 0) return true;
+  }
+  return false;
 }
 
 function formatDate(value: string | null): string {
@@ -40,6 +55,7 @@ export async function ChickenTable({
   }
 
   const data = (await res.json()) as ApiListResponse<ChickenDto>;
+  const isFiltered = hasMeaningfulFilters(searchParams);
 
   return (
     <div className="overflow-hidden rounded-lg border border-black/10 bg-white">
@@ -51,7 +67,20 @@ export async function ChickenTable({
       </div>
 
       <div className="p-3 md:hidden">
-        <ChickenListMobile items={data.items} />
+        {data.total === 0 ? (
+          <EmptyState
+            title={isFiltered ? "No chickens match these filters" : "No chickens yet"}
+            description={
+              isFiltered
+                ? "Try clearing your filters/search to see all chickens in this organization."
+                : "Chickens are the core records in your org. Add your first chicken to start tracking status, parents, and breeding."
+            }
+            ctaLabel={isFiltered ? "Clear filters" : "Add your first chicken"}
+            ctaHref={isFiltered ? "/chickens" : "/chickens/new"}
+          />
+        ) : (
+          <ChickenListMobile items={data.items} />
+        )}
       </div>
 
       <div className="hidden md:block">
@@ -96,7 +125,18 @@ export async function ChickenTable({
           ))}
 
           {data.items.length === 0 ? (
-            <div className="border-t border-black/10 px-4 py-6 text-sm text-black/60">No chickens found.</div>
+            <div className="border-t border-black/10 p-4">
+              <EmptyState
+                title={isFiltered ? "No chickens match these filters" : "No chickens yet"}
+                description={
+                  isFiltered
+                    ? "Try clearing your filters/search to see all chickens in this organization."
+                    : "Chickens are the core records in your org. Add your first chicken to start tracking status, parents, and breeding."
+                }
+                ctaLabel={isFiltered ? "Clear filters" : "Add your first chicken"}
+                ctaHref={isFiltered ? "/chickens" : "/chickens/new"}
+              />
+            </div>
           ) : null}
         </div>
       </div>

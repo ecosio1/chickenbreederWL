@@ -248,6 +248,101 @@ Warnings are displayed **during sire/dam selection** (and re-checked on save). V
 
 ## Explicit non-goals (out of V1)
 - Any genetic prediction, probability, coefficient calculations, trait inference, or advanced pedigree analytics.
+- No genetic scoring.
+- No photo uploads.
+- No advanced permissions (beyond simple roles; no permissions admin UI).
+- No analytics dashboards.
+- No coop maps.
 - Hatch rate tracking, egg production, incubation scheduling, sales invoicing, health/vet modules, and inventory.
+
+---
+
+## 16) Designer handoff checklist
+
+This section is the **implementation-backed handoff** for V1 screens and UI primitives. It includes:
+- **Component inventory**
+- **Mobile + tablet variants**
+- **Warning states**
+- **Empty states**
+- **Error states**
+
+### Component inventory (V1)
+
+#### App pages (routes)
+- `app/page.tsx`: Home (navigation entry)
+- `app/chickens/page.tsx`: Chickens list shell (header + filters + suspense)
+- `app/chickens/new/page.tsx`: Create chicken shell
+- `app/chickens/[id]/page.tsx`: Chicken detail (core fields, parents, lineage, offspring, breeding events)
+- `app/chickens/[id]/edit/page.tsx`: Edit chicken shell
+- `app/breeding-events/page.tsx`: Breeding events list
+- `app/breeding-events/new/page.tsx`: Create breeding event shell
+- `app/breeding-events/[id]/page.tsx`: Breeding event detail + offspring list
+- `app/breeding-events/[id]/offspring/page.tsx`: Add offspring (batch)
+- `app/coops/page.tsx`: Coops placeholder
+
+#### Feature components
+- **Chickens**
+  - `src/features/chickens/chicken-table.tsx`: Desktop grid + mobile card list wrapper
+  - `src/features/chickens/chicken-list-mobile.tsx`: Mobile-first card list (swipe actions)
+  - `src/features/chickens/chicken-filters.tsx`: Search + filter UI (desktop + mobile toggle)
+  - `src/features/chickens/chicken-form.tsx`: Create/edit form + duplicate Visual ID warning
+  - `src/features/chickens/chicken-picker.tsx`: Search/pick component used in breeding flow
+  - `src/features/chickens/lineage-tree.tsx`: Parents + grandparents cards
+  - `src/features/chickens/status-chip.tsx`: Status chip (inline editor)
+  - `src/features/chickens/status-quick-action.tsx`: Table quick action variant
+  - `src/features/chickens/visual-id.tsx`: Visual ID display (typography rules applied)
+  - `src/features/chickens/visual-id-format.ts`: Visual ID formatting helper
+- **Breeding events**
+  - `src/features/breeding-events/breeding-event-form.tsx`: Create breeding event + risk warnings panel
+  - `src/features/breeding-events/offspring-batch-form.tsx`: Batch offspring creation + parent summary
+- **Navigation/Dashboard**
+  - `src/features/navigation/global-search.tsx`: Global search input
+  - `src/features/dashboard/metric-card.tsx`, `src/features/dashboard/alert-card.tsx`: Dashboard primitives
+
+#### UI primitives
+- `src/ui/page-header.tsx`: Sticky page header (title/description/actions)
+- `src/ui/button.tsx`, `src/ui/input.tsx`, `src/ui/label.tsx`, `src/ui/select.tsx`: Form controls
+- `src/ui/status-badge.tsx`: Non-editable status badge (table-friendly)
+- `src/ui/dropdown-menu.tsx`: Radix dropdown used by row actions
+- `src/ui/warning-banner.tsx`: Warning/critical/info banner
+- `src/ui/breadcrumbs.tsx`: Breadcrumb nav
+- `src/ui/semantic-colors.ts`: Tone mapping + badge/dot styles
+
+### Responsive variants (mobile + tablet)
+
+Breakpoints follow Tailwind defaults (notably `md` for tablet-ish widths).
+
+- **Chickens list**
+  - **Mobile (< md)**: `ChickenListMobile` swipe cards (`src/features/chickens/chicken-list-mobile.tsx`)
+  - **Tablet/desktop (>= md)**: grid layout (`src/features/chickens/chicken-table.tsx`)
+- **Chicken detail**
+  - **Core fields / Parents / Lineage**: responsive grid (`app/chickens/[id]/page.tsx`)
+  - **Offspring + Breeding events**
+    - **Mobile (< md)**: card lists (`app/chickens/[id]/page.tsx`)
+    - **Tablet/desktop (>= md)**: tables
+- **Breeding events list**
+  - **Mobile (< md)**: card list
+  - **Tablet/desktop (>= md)**: table (`app/breeding-events/page.tsx`)
+- **Breeding event detail offspring**
+  - **Mobile (< md)**: card list
+  - **Tablet/desktop (>= md)**: table (`app/breeding-events/[id]/page.tsx`)
+- **Filters**
+  - Desktop shows full filter row; mobile uses a toggle panel (`src/features/chickens/chicken-filters.tsx`)
+
+### Warning states (designed + implemented)
+- **Inbreeding warnings**: Breeding event creation (`src/features/breeding-events/breeding-event-form.tsx`) uses `WarningBanner` with tones from `warningTone()`.
+- **Duplicate Visual ID number warning**: Chicken create/edit (`src/features/chickens/chicken-form.tsx`) shows risk banner when number collides.
+- **Status cues**: `StatusChip` / `StatusBadge` color + dot pairing (`src/ui/semantic-colors.ts`) (color is not sole indicator).
+
+### Empty states (designed + implemented)
+- **No chickens found**: desktop grid + mobile list (`src/features/chickens/chicken-table.tsx`, `src/features/chickens/chicken-list-mobile.tsx`)
+- **No breeding events yet / recorded**: breeding list + chicken detail breeding section (`app/breeding-events/page.tsx`, `app/chickens/[id]/page.tsx`)
+- **No offspring recorded**: breeding event detail + chicken detail offspring section (`app/breeding-events/[id]/page.tsx`, `app/chickens/[id]/page.tsx`)
+- **Unknown lineage**: lineage cards show “Unknown” placeholder (`src/features/chickens/lineage-tree.tsx`)
+
+### Error states (designed + implemented)
+- **List fetch failure**: red bordered error panels on list screens (e.g. `src/features/chickens/chicken-table.tsx`, `app/breeding-events/page.tsx`)
+- **Not found**: detail screens render a “Not found” panel + back action (`app/chickens/[id]/page.tsx`, `app/breeding-events/[id]/page.tsx`, `app/breeding-events/[id]/offspring/page.tsx`, `app/chickens/[id]/edit/page.tsx`)
+- **Validation errors**: field-level messages in forms (e.g. `src/features/breeding-events/breeding-event-form.tsx`, `src/features/chickens/chicken-form.tsx`)
 
 

@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
               <nav className="flex items-center gap-4 text-sm">
                 <Link className="text-black/70 hover:text-black" href="/">
-                  Dashboard
+                  Home
                 </Link>
                 <Link className="text-black/70 hover:text-black" href="/chickens">
                   Chickens
@@ -43,9 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </Link>
                 <Link className="text-black/70 hover:text-black" href="/data">
                   Data
-                </Link>
-                <Link className="text-black/70 hover:text-black" href="/settings">
-                  Settings
                 </Link>
               </nav>
             </div>

@@ -3,6 +3,7 @@ import { apiFetch } from "../../src/server/api";
 import { Button } from "../../src/ui/button";
 import { PageHeader } from "../../src/ui/page-header";
 import { formatVisualId } from "../../src/features/chickens/visual-id-format";
+import { EmptyState } from "../../src/ui/empty-state";
 
 function ParentLabel({
   uniqueCode,
@@ -30,6 +31,7 @@ export default async function BreedingEventsPage() {
   const res = await apiFetch("/api/breeding-events");
   const body = await res.json().catch(() => ({}));
   const items = Array.isArray(body?.items) ? (body.items as Array<Record<string, any>>) : [];
+  const hasItems = items.length > 0;
 
   return (
     <div className="space-y-4">
@@ -38,9 +40,11 @@ export default async function BreedingEventsPage() {
         description="Record sire/dam pairings and dates."
         actions={
           <>
-            <a href="/api/export/breeding-events.csv">
-              <Button variant="secondary">Export CSV</Button>
-            </a>
+            {hasItems ? (
+              <a href="/api/export/breeding-events.csv">
+                <Button variant="secondary">Export CSV</Button>
+              </a>
+            ) : null}
             <Link href="/breeding-events/new">
               <Button>Create</Button>
             </Link>
@@ -54,6 +58,15 @@ export default async function BreedingEventsPage() {
         </div>
       ) : (
         <div className="space-y-4">
+          {!hasItems ? (
+            <EmptyState
+              title="No breeding events yet"
+              description="Breeding events record which sire and dam were paired (and when), so you can later link offspring to those parents."
+              ctaLabel="Record your first breeding event"
+              ctaHref="/breeding-events/new"
+            />
+          ) : null}
+
           <div className="grid grid-cols-1 gap-2 md:hidden">
             {items.map((ev) => {
               const sire = ev?.sire ?? {};
@@ -94,11 +107,6 @@ export default async function BreedingEventsPage() {
                 </div>
               );
             })}
-            {items.length === 0 ? (
-              <div className="rounded-lg border border-black/10 bg-white p-4 text-sm text-black/60">
-                No breeding events yet.
-              </div>
-            ) : null}
           </div>
 
           <div className="hidden overflow-hidden rounded-lg border border-black/10 bg-white md:block">
@@ -172,8 +180,6 @@ export default async function BreedingEventsPage() {
                   </div>
                 );
               })}
-
-              {items.length === 0 ? <div className="px-4 py-6 text-sm text-black/60">No breeding events yet.</div> : null}
             </div>
           </div>
         </div>

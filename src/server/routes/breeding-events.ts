@@ -140,6 +140,10 @@ export const breedingEventsRoute = new Hono<AuthOrgEnv>()
       } as const;
     }
 
+    const warnings: Array<{ code: string; message: string; meta?: Record<string, unknown> }> = [];
+    const unassignedVisualRows: number[] = [];
+    const partialVisualRows: number[] = [];
+
     const created = await Promise.all(
       parsed.data.offspring.map(async (o, i) => {
         const hatchDate = parseDate(o.hatch_date);
@@ -147,13 +151,19 @@ export const breedingEventsRoute = new Hono<AuthOrgEnv>()
           throw new Error(`invalid_hatch_date:${i}`);
 
         const defaults = defaultBreeds();
+
+        const hasAnyVisualInput = Boolean(o.visual_id_type || o.visual_id_color || o.visual_id_number);
+        const hasAllVisualInput = Boolean(o.visual_id_type && o.visual_id_color && o.visual_id_number);
+        if (!hasAnyVisualInput) unassignedVisualRows.push(i);
+        if (hasAnyVisualInput && !hasAllVisualInput) partialVisualRows.push(i);
+
         const visual = {
           visualIdType: o.visual_id_type ?? fallbackVisual(i).visualIdType,
           visualIdColor: o.visual_id_color ?? fallbackVisual(i).visualIdColor,
           visualIdNumber: o.visual_id_number ?? fallbackVisual(i).visualIdNumber,
         };
 
-        return prisma.chicken.create({
+        const createdChicken = await prisma.chicken.create({
           data: {
             organizationId,
             visualIdType: visual.visualIdType,
@@ -170,6 +180,13 @@ export const breedingEventsRoute = new Hono<AuthOrgEnv>()
             notes: o.notes ?? null,
           },
         });
+
+        return {
+          id: createdChicken.id,
+          visualIdType: visual.visualIdType,
+          visualIdColor: visual.visualIdColor,
+          visualIdNumber: visual.visualIdNumber,
+        };
       }),
     ).catch((err) => {
       const msg = String(err?.message ?? "");
@@ -182,7 +199,22 @@ export const breedingEventsRoute = new Hono<AuthOrgEnv>()
       throw err;
     });
 
-    return c.json({ created: created.map((x: any) => ({ id: x.id })) }, 201);
+    if (unassignedVisualRows.length) {
+      warnings.push({
+        code: "visual_id_auto_assigned",
+        message: `${unassignedVisualRows.length} row(s) had no Visual ID; placeholders were auto-assigned.`,
+        meta: { rows: unassignedVisualRows.map((x) => x + 1) },
+      });
+    }
+    if (partialVisualRows.length) {
+      warnings.push({
+        code: "visual_id_partial",
+        message: `${partialVisualRows.length} row(s) had a partial Visual ID; missing parts were auto-filled.`,
+        meta: { rows: partialVisualRows.map((x) => x + 1) },
+      });
+    }
+
+    return c.json({ created, warnings }, 201);
   })
   .post("/breeding-events", async (c) => {
     const organizationId = c.get("organizationId");

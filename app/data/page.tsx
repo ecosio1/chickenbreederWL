@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { Button } from "../../src/ui/button";
+import { ExportLink } from "../../src/features/data/export-links";
 
 export default function DataPage() {
   return (
@@ -12,12 +14,15 @@ export default function DataPage() {
         <section className="rounded-lg border border-black/10 bg-white p-4">
           <h2 className="text-sm font-medium">Import</h2>
           <p className="mt-1 text-sm text-black/70">
-            Download the template CSV, fill it in Excel, then import via API (UI mapping is V1.1).
+            Download the template CSV, then import a CSV or Excel file with mapping + preview.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <a href="/api/import/chickens/template.csv">
               <Button variant="secondary">Download template CSV</Button>
             </a>
+            <Link href="/data/import">
+              <Button>Import chickens</Button>
+            </Link>
           </div>
         </section>
 
@@ -25,12 +30,8 @@ export default function DataPage() {
           <h2 className="text-sm font-medium">Export</h2>
           <p className="mt-1 text-sm text-black/70">One click exports with parent unique codes included.</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <a href="/api/export/chickens.csv">
-              <Button variant="secondary">Export chickens CSV</Button>
-            </a>
-            <a href="/api/export/breeding-events.csv">
-              <Button variant="secondary">Export breeding events CSV</Button>
-            </a>
+            <ExportLink href="/api/export/chickens.csv" label="Export chickens CSV" />
+            <ExportLink href="/api/export/breeding-events.csv" label="Export breeding events CSV" />
           </div>
         </section>
       </div>

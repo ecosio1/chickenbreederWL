@@ -17,14 +17,9 @@ export default async function ChickensPage({
         title="Chickens"
         description="Search and manage birds within the current organization."
         actions={
-          <>
-            <a href="/api/export/chickens.csv">
-              <Button variant="secondary">Export CSV</Button>
-            </a>
-            <Link href="/chickens/new">
-              <Button>Add chicken</Button>
-            </Link>
-          </>
+          <Link href="/chickens/new">
+            <Button>Add chicken</Button>
+          </Link>
         }
       />
 

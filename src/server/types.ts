@@ -39,7 +39,13 @@ export interface PrismaLike {
       select?: Record<string, unknown>;
     }): Promise<Array<Record<string, unknown>>>;
     count(args: { where: Record<string, unknown> }): Promise<number>;
-    create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
+    create(args: { data: Record<string, unknown> }): Promise<{
+      id: string;
+      uniqueCode?: string;
+      visualIdType?: string;
+      visualIdColor?: string;
+      visualIdNumber?: string;
+    }>;
     update(args: { where: { id: string }; data: Record<string, unknown> }): Promise<Record<string, unknown>>;
   };
   breedingEvent: {

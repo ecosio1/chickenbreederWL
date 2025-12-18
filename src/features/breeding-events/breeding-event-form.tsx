@@ -61,30 +61,31 @@ export function BreedingEventForm() {
   });
 
   useEffect(() => {
-    let isCancelled = false;
+    const ac = new AbortController();
     const sireId = form.sire_id;
     const damId = form.dam_id;
     if (!sireId || !damId) {
       setRiskWarnings([]);
+      setIsCheckingRisk(false);
       return;
     }
 
-    const t = setTimeout(() => {
-      void (async () => {
-        setIsCheckingRisk(true);
-        const res = await fetch(
-          `/api/breeding-events/pair-risk?sire_id=${encodeURIComponent(sireId!)}&dam_id=${encodeURIComponent(damId!)}`,
-        );
-        const body = await res.json().catch(() => null);
-        if (isCancelled) return;
-        setIsCheckingRisk(false);
-        setRiskWarnings(Array.isArray(body?.warnings) ? body.warnings : []);
-      })();
-    }, 250);
+    setIsCheckingRisk(true);
+    void (async () => {
+      const res = await fetch(
+        `/api/breeding-events/pair-risk?sire_id=${encodeURIComponent(sireId)}&dam_id=${encodeURIComponent(damId)}`,
+        { signal: ac.signal },
+      ).catch(() => null);
+
+      if (!res) return;
+      const body = await res.json().catch(() => null);
+      if (ac.signal.aborted) return;
+      setIsCheckingRisk(false);
+      setRiskWarnings(Array.isArray(body?.warnings) ? body.warnings : []);
+    })();
 
     return () => {
-      isCancelled = true;
-      clearTimeout(t);
+      ac.abort();
     };
   }, [form.dam_id, form.sire_id]);
 

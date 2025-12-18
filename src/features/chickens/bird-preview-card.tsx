@@ -43,42 +43,57 @@ export function BirdPreviewCard({ chicken, href, isStatusEditable = false, class
   const targetHref: Route | UrlObject =
     href ?? ({ pathname: "/chickens/[id]", query: { id: chicken.id } } satisfies UrlObject);
 
-  const content = (
-    <div className={cn("rounded-lg border border-black/10 bg-white p-4 hover:bg-black/[0.02]", className)}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <VisualIdBadge
-            visualIdType={chicken.visualIdType}
-            visualIdColor={chicken.visualIdColor}
-            visualIdNumber={chicken.visualIdNumber}
-          />
-          <div className="mt-2 truncate text-sm text-black/60">
-            {chicken.uniqueCode ? `Code: ${chicken.uniqueCode}` : formatVisualId(chicken)}
+  const visualIdLabel = formatVisualId(chicken);
+
+  return (
+    <div className={cn("relative rounded-lg border border-black/10 bg-white hover:bg-black/[0.02]", className)}>
+      {/* Stretched-link pattern (avoids nesting interactive controls) */}
+      <Link
+        href={targetHref as any}
+        className={cn(
+          "absolute inset-0 z-0 rounded-lg",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
+        )}
+        aria-label={`View bird ${visualIdLabel}`}
+      />
+
+      <div className="relative z-10 p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <VisualIdBadge
+              visualIdType={chicken.visualIdType}
+              visualIdColor={chicken.visualIdColor}
+              visualIdNumber={chicken.visualIdNumber}
+            />
+            <div className="mt-2 truncate text-sm text-black/60">
+              {chicken.uniqueCode ? `Code: ${chicken.uniqueCode}` : visualIdLabel}
+            </div>
+          </div>
+          <div className="relative z-10">
+            <StatusChip
+              id={chicken.id}
+              status={chicken.status}
+              statusDate={chicken.statusDate}
+              isEditable={isStatusEditable}
+            />
           </div>
         </div>
-        <StatusChip id={chicken.id} status={chicken.status} statusDate={chicken.statusDate} isEditable={isStatusEditable} />
-      </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-black/80">
-        <div className="flex flex-wrap gap-x-2">
-          <span className="text-black/60">Breed:</span>
-          <span className="font-medium">{formatBreed(chicken)}</span>
-          <span className="text-black/30">·</span>
-          <span className="text-black/60">Sex:</span>
-          <span className="font-medium">{formatSex(chicken.sex)}</span>
-        </div>
-        <div className="flex flex-wrap gap-x-2">
-          <span className="text-black/60">Location:</span>
-          <span className="font-medium">{chicken.coopLocationName?.trim() || "—"}</span>
+        <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-black/80">
+          <div className="flex flex-wrap gap-x-2">
+            <span className="text-black/60">Breed:</span>
+            <span className="font-medium">{formatBreed(chicken)}</span>
+            <span className="text-black/30">·</span>
+            <span className="text-black/60">Sex:</span>
+            <span className="font-medium">{formatSex(chicken.sex)}</span>
+          </div>
+          <div className="flex flex-wrap gap-x-2">
+            <span className="text-black/60">Location:</span>
+            <span className="font-medium">{chicken.coopLocationName?.trim() || "—"}</span>
+          </div>
         </div>
       </div>
     </div>
-  );
-
-  return (
-    <Link href={targetHref as any} className="block">
-      {content}
-    </Link>
   );
 }
 
