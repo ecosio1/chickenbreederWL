@@ -6,6 +6,7 @@ import { ChickenListMobile } from "./chicken-list-mobile";
 import { ChickenRowActions } from "./chicken-row-actions";
 import { VisualId } from "./visual-id";
 import { EmptyState } from "../../ui/empty-state";
+import { Button } from "../../ui/button";
 
 function toQueryString(searchParams: Record<string, string | string[] | undefined>): string {
   const usp = new URLSearchParams();
@@ -64,6 +65,13 @@ export async function ChickenTable({
           Showing <span className="font-medium text-black">{data.items.length}</span> of{" "}
           <span className="font-medium text-black">{data.total}</span>
         </div>
+        {data.total > 0 ? (
+          <a href="/api/export/chickens.csv">
+            <Button variant="secondary" size="sm">
+              Export CSV
+            </Button>
+          </a>
+        ) : null}
       </div>
 
       <div className="p-3 md:hidden">
